@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_yasg',
     'listings',
+    'celery',
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -148,3 +149,29 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Email Configuration 📧
+# Use the console backend for local development to print emails to the terminal
+# For production, change this to an SMTP backend.
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.example.com')
+EMAIL_PORT = env('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env('EMAIL_USE_TLS', default=True)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='your_email@example.com')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='your_email_password')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='webmaster@localhost')
+
+# Celery Configuration 📦
+# RabbitMQ is the default broker, but explicitly setting the URL is good practice.
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5672//')
+
+# Store results in the same broker. For production, a dedicated result backend like Redis is recommended.
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='amqp://guest:guest@localhost:5672//')
+
+# Define how tasks are serialized
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TIMEZONE = 'Africa/Nairobi' # Update this to your local timezone for better tracking
+CELERY_ENABLE_UTC = True

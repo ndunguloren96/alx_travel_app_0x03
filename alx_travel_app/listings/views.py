@@ -1,7 +1,8 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, serializers
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import Listing, Booking
 from .serializers import ListingSerializer, BookingSerializer
+from .tasks import send_booking_confirmation_email_task
 
 class ListingViewSet(viewsets.ModelViewSet):
     """
@@ -27,7 +28,8 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """
-        Set the guest of the booking to the current user on creation.
+        Set the guest of the booking to the current user on creation
+        and trigger a background email notification task.
         """
         # Ensure the listing exists before creating a booking
         listing_id = self.request.data.get('listing')
@@ -36,9 +38,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         except Listing.DoesNotExist:
             raise serializers.ValidationError({"listing": "Listing not found."})
 
-        # You might want to add more robust booking validation here,
-        # e.g., checking for date overlaps, availability, etc.
-        serializer.save(guest=self.request.user, listing=listing)
+        # Save the booking instance
+        booking = serializer.save(guest=self.request.user, listing=listing)
+
+        # Trigger the Celery task to send a booking confirmation email
+        send_booking_confirmation_email_task.delay(booking.id)
 
     def get_queryset(self):
         """
